@@ -39,7 +39,7 @@ const logger = new KoaLogger();
 
 router
   .post("/menu", KoaBody({ multipart: true }), updateMenu)
-  .get("/menu", KoaBody(), getMenu);
+  .get("/menu/:week", KoaBody(), getMenu);
 
 app
   .use(logger)
@@ -56,7 +56,7 @@ app.use(async (ctx, next) => {
 
 // GET Menu
 async function getMenu(ctx, next) {
-  const reqWeekNumber = ctx.request.query.weekNumber;
+  const reqWeekNumber = ctx.params.week;
   const weekNumber = reqWeekNumber ? reqWeekNumber : getWeek(new Date());
 
   try {

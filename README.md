@@ -6,9 +6,9 @@ Fetches menu for current week as `json`.
 
 </br>
 
-## `GET /menu?weekNumber=<weekNumber>`
+## `GET /menu/<weekNumber>`
 
-Fetches menu for the given week as `json`.
+Fetches menu for the given week as `json`. For example `GET /menu/week/47` will return menu for week 47.
 
 </br>
 
