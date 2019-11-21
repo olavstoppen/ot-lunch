@@ -1,0 +1,27 @@
+{
+  "name": "@olavstoppen/ot-lunch",
+  "version": "1.0.0",
+  "engines": {},
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "embed": "npx embedme README.md",
+    "dev": "nodemon --inspect=33466 --no-warnings --experimental-modules --es-module-specifier-resolution=node --loader ./alias-loader.js index.js",
+    "start": "node --experimental-modules --es-module-specifier-resolution=node --loader ./alias-loader.js index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "date-fns": "^2.7.0",
+    "dotenv": "^8.0.0",
+    "koa": "^2.7.0",
+    "koa-body": "^4.0.8",
+    "koa-logger": "^3.2.0",
+    "koa-router": "^7.4.0",
+    "koa-static": "^5.0.0",
+    "ramda": "^0.26.1",
+    "textract": "^2.5.0"
+  },
+  "aliases": {}
+}
