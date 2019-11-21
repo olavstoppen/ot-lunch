@@ -4,9 +4,13 @@
 
 Fetches menu for current week as `json`.
 
+</br>
+
 ## `GET /menu?weekNumber=<weekNumber>`
 
 Fetches menu for the given week as `json`.
+
+</br>
 
 ## `POST /menu`
 
