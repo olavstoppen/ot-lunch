@@ -1,6 +1,15 @@
-<p >
-  <a href="https://olavstoppen.no" target="blank"><img src="https://www.olavstoppen.no/wp-content/uploads/2018/06/logo-postive.png" width="320" alt="Olavstoppen Logo" /></a>
-</p>
+# Lunch-broker
 
-# Lunch 
+## `GET /menu`
 
+Fetches menu for current week as `json`.
+
+## `GET /menu?weekNumber=<weekNumber>`
+
+Fetches menu for the given week as `json`.
+
+## `POST /menu`
+
+Uploads and parses files into menu. `Content-Type` must be `multipart/form-data` for uploading the files
+
+**Currently only "Boost Food Lunsjmeny powerpoint" is supported.**
