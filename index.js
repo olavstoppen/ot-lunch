@@ -39,6 +39,7 @@ const logger = new KoaLogger();
 
 router
   .post("/menu", KoaBody({ multipart: true }), updateMenu)
+  .get("/menu", KoaBody(), getMenu)
   .get("/menu/:week", KoaBody(), getMenu);
 
 app
