@@ -186,7 +186,7 @@ const menuBuilder = R.pipe(
   )
 );
 
-app.use(KoaServe(path.join(__dirname, "/public")));
+app.use(KoaServe("./public"));
 
 app.listen(PORT);
 
