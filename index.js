@@ -67,7 +67,11 @@ async function getMenu(ctx, next) {
     ctx.response.body = menu;
   } catch (error) {
     ctx.response.status = 404;
-    ctx.response.body = `Menu not found for week ${weekNumber}`;
+    ctx.response.body = {
+      error: {
+        message: `Menu not found for week ${weekNumber}`
+      }
+    };
   }
 }
 
@@ -149,9 +153,9 @@ const menuBuilder = R.pipe(
   R.filter(x => R.not(R.isEmpty(x))),
   R.reduce(
     (acc, val) => {
-      const isDay = R.test(/MANDAG|TIRSDAG|ONSDAG|TORSDAG|FREDAG/, val);
-      const isMenu = R.test(/:/, val);
-      const isWeek = R.test(/^UKE/, val);
+      const isDay = R.test(/MANDAG|TIRSDAG|ONSDAG|TORSDAG|FREDAG/i, val);
+      const isMenu = R.test(/:|varmrett|suppe|temadag/i, val);
+      const isWeek = R.test(/^UKE/i, val);
 
       if (isDay) {
         return {
@@ -162,7 +166,12 @@ const menuBuilder = R.pipe(
       }
 
       if (isMenu) {
-        const dish = val;
+        let dish = val;
+        const isMissingSemiColon = dish.indexOf(`:`) === -1;
+        if (isMissingSemiColon) {
+          const [_, type, name] = val.match(/(varmrett|suppe|temadag)(.*)/i);
+          dish = `${type}:${name}`;
+        }
         return {
           ...acc,
           days: R.map(x => {
