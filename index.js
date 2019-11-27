@@ -13,69 +13,35 @@ import * as R from "ramda";
 import dateFns from "date-fns";
 
 dotenv.config();
-
-const mkdir = folder => {
-  if (!fs.existsSync(folder)) {
-    fs.mkdirSync(folder);
-  }
-};
 const { getWeek } = dateFns;
+
+// Utilities
 
 // --experimental-modules-flag does not have __dirname global
 const __dirname = path.resolve(
   path.dirname(decodeURI(new URL(import.meta.url).pathname))
 );
 
-const PORT = process.env.PORT || 5001;
-const UPLOADS = "uploads";
-const MENUS = "menus";
+const capitalize = word =>
+  `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`;
 
-mkdir(UPLOADS);
-mkdir(MENUS);
+const digitsOnly = R.pipe(R.match(/\d+/), R.head);
 
-const app = new Koa();
-const router = new KoaRouter();
-const logger = new KoaLogger();
+const withoutNils = R.filter(R.complement(R.isNil));
 
-router
-  .post("/menu", KoaBody({ multipart: true }), updateMenu)
-  .get("/menu", KoaBody(), getMenu)
-  .get("/menu/:week", KoaBody(), getMenu);
-
-app
-  .use(logger)
-  .use(router.routes())
-  .use(router.allowedMethods());
-
-// custom 404
-
-app.use(async (ctx, next) => {
-  await next();
-  if (ctx.body || !ctx.idempotent) return;
-  ctx.redirect("/404.html");
+const errorBody = (message, weekNumber = "") => ({
+  days: [],
+  weekNumber,
+  error: {
+    message: message
+  }
 });
 
-// GET Menu
-async function getMenu(ctx, next) {
-  const reqWeekNumber = ctx.params.week;
-  const weekNumber = reqWeekNumber ? reqWeekNumber : getWeek(new Date());
-
-  try {
-    const menu = await readFileAsync(
-      path.join(__dirname, MENUS, `${weekNumber}.json`)
-    );
-    ctx.response.body = menu;
-  } catch (error) {
-    ctx.response.status = 404;
-    ctx.response.body = {
-      days: [],
-      weekNumber,
-      error: {
-        message: `Menu not found for week ${weekNumber}`
-      }
-    };
+const mkdir = folder => {
+  if (!fs.existsSync(folder)) {
+    fs.mkdirSync(folder);
   }
-}
+};
 
 const readFileAsync = async filename =>
   new Promise((resolve, reject) =>
@@ -91,6 +57,58 @@ const readFileAsync = async filename =>
     })
   );
 
+// Setup
+
+const PORT = process.env.PORT || 5001;
+const PATHS = {
+  UPLOADS: "uploads",
+  MENUS: "menus"
+};
+
+mkdir(PATHS.UPLOADS);
+mkdir(PATHS.MENUS);
+
+const app = new Koa();
+const router = new KoaRouter();
+const logger = new KoaLogger();
+
+router
+  .post("/menu", KoaBody({ multipart: true }), updateMenu)
+  .get("/menu", KoaBody(), getMenu)
+  .get("/menu/:week", KoaBody(), getMenu);
+
+app
+  .use(logger)
+  .use(router.routes())
+  .use(router.allowedMethods());
+
+// Custom 404
+
+app.use(async (ctx, next) => {
+  await next();
+  if (ctx.body || !ctx.idempotent) return;
+  ctx.redirect("/404.html");
+});
+
+// GET Menu
+async function getMenu(ctx) {
+  const reqWeekNumber = ctx.params.week;
+  const weekNumber = reqWeekNumber ? reqWeekNumber : getWeek(new Date());
+
+  try {
+    const menu = await readFileAsync(
+      path.join(__dirname, PATHS.MENUS, `${weekNumber}.json`)
+    );
+    ctx.response.body = menu;
+  } catch (error) {
+    ctx.response.status = 404;
+    ctx.response.body = errorBody(
+      `Menu not found for week ${weekNumber}`,
+      weekNumber
+    );
+  }
+}
+
 // UPDATE Menu
 
 async function updateMenu(ctx, next) {
@@ -100,45 +118,39 @@ async function updateMenu(ctx, next) {
         file =>
           new Promise(resolve => {
             const { name } = file;
-            const reader = fs.createReadStream(file.path);
-            const stream = fs.createWriteStream(
-              path.join(__dirname, UPLOADS, name)
-            );
-            reader.pipe(stream);
 
-            reader.on("close", async () => {
-              const weekNumber = digitsOnly(name);
-
-              console.log(`Finished uploading  ${name}\n`);
-
-              const formatted = await extractTextFromPptx(`uploads/${name}`);
-
-              fs.writeFileSync(
-                path.join(__dirname, MENUS, parsedFileName(name)),
-                JSON.stringify(formatted, null, 2)
+            if (R.isEmpty(name)) {
+              resolve(null);
+            } else {
+              const uploadPath = path.join(__dirname, PATHS.UPLOADS, name);
+              const menuPath = path.join(
+                __dirname,
+                PATHS.MENUS,
+                `${digitsOnly(name)}.json`
               );
 
-              console.info(`Created menu for week ${weekNumber}\n`);
+              const reader = fs.createReadStream(file.path);
+              const stream = fs.createWriteStream(uploadPath);
+              reader.pipe(stream);
 
-              resolve(formatted);
-            });
+              reader.on("close", async () => {
+                console.info(`Finished uploading: ${name}`);
+                const menu = await createMenuFromPptx(uploadPath);
+                fs.writeFileSync(menuPath, JSON.stringify(menu, null, 2));
+                console.info(`Created menu for week: ${menu.weekNumber}`);
+                resolve(menu);
+              });
+            }
           })
       )
     );
-    ctx.response.body = menus;
+    ctx.response.body = withoutNils(menus);
   } else {
     next();
   }
 }
 
-const capitalize = word =>
-  `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`;
-
-const digitsOnly = R.pipe(R.match(/\d+/), R.head);
-
-const parsedFileName = name => `${digitsOnly(name)}.json`;
-
-const extractTextFromPptx = async filePath =>
+const createMenuFromPptx = async filePath =>
   new Promise((resolve, reject) =>
     textract.fromFileWithPath(
       filePath,
@@ -147,7 +159,7 @@ const extractTextFromPptx = async filePath =>
         if (error) {
           reject(error);
         }
-        resolve(menuBuilder(text));
+        resolve(buildMenu(text));
       }
     )
   );
@@ -172,7 +184,7 @@ const prepAndSort = ({ days, weekNumber }) => ({
   days: sortyByDay(days)
 });
 
-const menuBuilder = R.pipe(
+const buildMenu = R.pipe(
   R.split("\n"),
   R.map(R.trim),
   R.filter(x => R.not(R.isEmpty(x))),
@@ -222,6 +234,8 @@ const menuBuilder = R.pipe(
   ),
   prepAndSort
 );
+
+// Start
 
 app.use(KoaServe("./public"));
 
