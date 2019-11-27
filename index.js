@@ -68,6 +68,8 @@ async function getMenu(ctx, next) {
   } catch (error) {
     ctx.response.status = 404;
     ctx.response.body = {
+      days: [],
+      weekNumber,
       error: {
         message: `Menu not found for week ${weekNumber}`
       }
