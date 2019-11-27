@@ -26,6 +26,7 @@
         cursor: pointer;
       }
       .button {
+        font-size: 0.9rem;
         margin: 8px 0;
         outline: none;
         border: 1px solid #fff;
@@ -36,13 +37,33 @@
         background: #333;
         color: #fff;
       }
+      .dropzone {
+        height: 200px;
+        width: 200px;
+        border: 1px dashed #333;
+        padding: 24px;
+        position: relative;
+      }
     </style>
   </head>
   <body>
     <h1>Lunch upload</h1>
+    <h4>Drag & drop or click to upload</h4>
     <form action="/menu" method="post" enctype="multipart/form-data">
-      <input class="button" type="file" id="menu1" name="menu1" multiple />
-      <input class="button" type="file" id="menu2" name="menu2" multiple />
+      <input
+        class="button dropzone"
+        type="file"
+        id="menu1"
+        name="menu1"
+        multiple
+      />
+      <input
+        class="button dropzone"
+        type="file"
+        id="menu2"
+        name="menu2"
+        multiple
+      />
       <input class="button" type="submit" value="Upload" />
     </form>
   </body>
