@@ -129,6 +129,9 @@ async function updateMenu(ctx, next) {
   }
 }
 
+const capitalize = word =>
+  `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`;
+
 const digitsOnly = R.pipe(R.match(/\d+/), R.head);
 
 const parsedFileName = name => `${digitsOnly(name)}.json`;
@@ -147,6 +150,26 @@ const extractTextFromPptx = async filePath =>
     )
   );
 
+const dayWeights = {
+  mandag: 1,
+  tirsdag: 2,
+  onsdag: 3,
+  torsdag: 4,
+  fredag: 5,
+  lørdag: 6,
+  søndag: 7
+};
+const sortyByDay = R.sort((a, b) => {
+  const left = dayWeights[R.toLower(a.day)];
+  const right = dayWeights[R.toLower(b.day)];
+
+  return left - right;
+});
+const prepAndSort = ({ days, weekNumber }) => ({
+  weekNumber,
+  days: sortyByDay(days)
+});
+
 const menuBuilder = R.pipe(
   R.split("\n"),
   R.map(R.trim),
@@ -158,10 +181,11 @@ const menuBuilder = R.pipe(
       const isWeek = R.test(/^UKE/i, val);
 
       if (isDay) {
+        const day = capitalize(val);
         return {
           ...acc,
-          _parsingDay: val,
-          days: [...acc.days, { day: val, dishes: [] }]
+          _parsingDay: day,
+          days: [...acc.days, { day, dishes: [] }]
         };
       }
 
@@ -193,7 +217,8 @@ const menuBuilder = R.pipe(
       return acc;
     },
     { days: [], _parsingDay: "" }
-  )
+  ),
+  prepAndSort
 );
 
 app.use(KoaServe("./public"));
