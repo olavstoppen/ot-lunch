@@ -20,6 +20,7 @@
     "koa-logger": "^3.2.0",
     "koa-router": "^7.4.0",
     "koa-static": "^5.0.0",
+    "node-fetch": "^2.6.0",
     "ramda": "^0.26.1",
     "textract": "^2.5.0"
   },

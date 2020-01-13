@@ -11,6 +11,7 @@ import path from "path";
 import fs from "fs";
 import * as R from "ramda";
 import dateFns from "date-fns";
+import fetch from "node-fetch";
 
 dotenv.config();
 const { getWeek } = dateFns;
@@ -28,6 +29,8 @@ const capitalize = word =>
 const digitsOnly = R.pipe(R.match(/\d+/), R.head);
 
 const withoutNils = R.filter(R.complement(R.isNil));
+
+const isNotEmpty = R.pipe(R.trim, R.isEmpty, R.not);
 
 const errorBody = (message, weekNumber = "") => ({
   days: [],
@@ -60,6 +63,7 @@ const readFileAsync = async filename =>
 // Setup
 
 const PORT = process.env.PORT || 5001;
+const LUNCH_API_URL = process.env.LUNCH_API_URL;
 const PATHS = {
   UPLOADS: "uploads",
   MENUS: "menus"
@@ -73,9 +77,10 @@ const router = new KoaRouter();
 const logger = new KoaLogger();
 
 router
-  .post("/menu", KoaBody({ multipart: true }), updateMenu)
-  .get("/menu", KoaBody(), getMenu)
-  .get("/menu/:week", KoaBody(), getMenu);
+  .post("/menu-powerpoint", KoaBody({ multipart: true }), updatePowerpointMenu)
+  .get("/menu-powerpoint", KoaBody(), getPowerpointMenu)
+  .get("/menu-powerpoint/:week", KoaBody(), getPowerpointMenu)
+  .get("/menu", KoaBody(), getMenu);
 
 app
   .use(logger)
@@ -89,9 +94,39 @@ app.use(async (ctx, next) => {
   if (ctx.body || !ctx.idempotent) return;
   ctx.redirect("/404.html");
 });
-
-// GET Menu
+// GET Nourish menu
 async function getMenu(ctx) {
+  const reqWeekNumber = ctx.params.week;
+  const weekNumber = reqWeekNumber ? reqWeekNumber : getWeek(new Date());
+
+  try {
+    const cafeteria = await fetch(LUNCH_API_URL).then(res => res.json());
+
+    const menu = R.pipe(
+      R.find(x => x.type === "info"),
+      R.prop("categories"),
+      R.head,
+      R.prop("entries"),
+      parseNourishMenu
+    )(cafeteria.data.menu);
+
+    ctx.response.body = menu;
+  } catch (error) {
+    ctx.response.status = 404;
+    ctx.response.body = errorBody(
+      `Menu not found for week ${weekNumber}`,
+      weekNumber
+    );
+  }
+}
+
+const parseNourishMenu = R.map(menu => ({
+  day: R.head(R.match(/MANDAG|TIRSDAG|ONSDAG|TORSDAG|FREDAG/i, menu.name)),
+  dishes: R.pipe(R.split("{n}"), R.filter(isNotEmpty))(menu.desc)
+}));
+
+// GET Powerpoint Menu
+async function getPowerpointMenu(ctx) {
   const reqWeekNumber = ctx.params.week;
   const weekNumber = reqWeekNumber ? reqWeekNumber : getWeek(new Date());
 
@@ -109,9 +144,8 @@ async function getMenu(ctx) {
   }
 }
 
-// UPDATE Menu
-
-async function updateMenu(ctx, next) {
+// UPDATE Powerpoint Menu
+async function updatePowerpointMenu(ctx, next) {
   if (R.complement(R.isNil(ctx.request.files))) {
     const menus = await Promise.all(
       Object.values(ctx.request.files).map(
