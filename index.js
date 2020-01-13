@@ -96,13 +96,12 @@ app.use(async (ctx, next) => {
 });
 // GET Nourish menu
 async function getMenu(ctx) {
-  const reqWeekNumber = ctx.params.week;
-  const weekNumber = reqWeekNumber ? reqWeekNumber : getWeek(new Date());
+  const weekNumber = getWeek(new Date());
 
   try {
     const cafeteria = await fetch(LUNCH_API_URL).then(res => res.json());
 
-    const menu = R.pipe(
+    const days = R.pipe(
       R.find(x => x.type === "info"),
       R.prop("categories"),
       R.head,
@@ -110,7 +109,10 @@ async function getMenu(ctx) {
       parseNourishMenu
     )(cafeteria.data.menu);
 
-    ctx.response.body = menu;
+    ctx.response.body = {
+      weekNumber,
+      days
+    };
   } catch (error) {
     ctx.response.status = 404;
     ctx.response.body = errorBody(
