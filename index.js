@@ -99,33 +99,33 @@ async function getMenu(ctx) {
   const weekNumber = getWeek(new Date());
 
   try {
-    const cafeteria = await fetch(LUNCH_API_URL).then(res => res.json());
+    const {
+      data: { menu, imgPaths }
+    } = await fetch(LUNCH_API_URL).then(res => res.json());
 
     const days = R.pipe(
       R.find(x => x.type === "info"),
       R.prop("categories"),
       R.head,
       R.prop("entries"),
-      parseNourishMenu
-    )(cafeteria.data.menu);
+      R.map(R.partialRight(parseNourishMenu, imgPaths))
+    )(menu);
 
     ctx.response.body = {
       weekNumber,
       days
     };
   } catch (error) {
-    ctx.response.status = 404;
-    ctx.response.body = errorBody(
-      `Menu not found for week ${weekNumber}`,
-      weekNumber
-    );
+    ctx.response.status = 500;
+    ctx.response.body = errorBody(error.message, weekNumber);
   }
 }
 
-const parseNourishMenu = R.map(menu => ({
+const parseNourishMenu = (menu, imgPath) => ({
   day: R.head(R.match(/MANDAG|TIRSDAG|ONSDAG|TORSDAG|FREDAG/i, menu.name)),
-  dishes: R.pipe(R.split("{n}"), R.filter(isNotEmpty))(menu.desc)
-}));
+  dishes: R.pipe(R.split("{n}"), R.filter(isNotEmpty))(menu.desc),
+  image: `${imgPath}${menu.img}`
+});
 
 // GET Powerpoint Menu
 async function getPowerpointMenu(ctx) {
