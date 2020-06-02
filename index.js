@@ -9,7 +9,7 @@ import KoaServe from "koa-static";
 import textract from "textract";
 import path from "path";
 import fs from "fs";
-import * as R from "ramda";
+import R from "ramda";
 import dateFns from "date-fns";
 import fetch from "node-fetch";
 
@@ -23,7 +23,7 @@ const __dirname = path.resolve(
   path.dirname(decodeURI(new URL(import.meta.url).pathname))
 );
 
-const capitalize = word =>
+const capitalize = (word) =>
   `${word.slice(0, 1).toUpperCase()}${word.slice(1).toLowerCase()}`;
 
 const digitsOnly = R.pipe(R.match(/\d+/), R.head);
@@ -36,17 +36,17 @@ const errorBody = (message, weekNumber = "") => ({
   days: [],
   weekNumber,
   error: {
-    message: message
-  }
+    message: message,
+  },
 });
 
-const mkdir = folder => {
+const mkdir = (folder) => {
   if (!fs.existsSync(folder)) {
     fs.mkdirSync(folder);
   }
 };
 
-const readFileAsync = async filename =>
+const readFileAsync = async (filename) =>
   new Promise((resolve, reject) =>
     fs.readFile(filename, (err, data) => {
       if (err) {
@@ -66,7 +66,7 @@ const PORT = process.env.PORT || 5001;
 const LUNCH_API_URL = process.env.LUNCH_API_URL;
 const PATHS = {
   UPLOADS: "uploads",
-  MENUS: "menus"
+  MENUS: "menus",
 };
 
 mkdir(PATHS.UPLOADS);
@@ -82,10 +82,7 @@ router
   .get("/menu-powerpoint/:week", KoaBody(), getPowerpointMenu)
   .get("/menu", KoaBody(), getMenu);
 
-app
-  .use(logger)
-  .use(router.routes())
-  .use(router.allowedMethods());
+app.use(logger).use(router.routes()).use(router.allowedMethods());
 
 // Custom 404
 
@@ -100,11 +97,11 @@ async function getMenu(ctx) {
 
   try {
     const {
-      data: { menu, imgPaths }
-    } = await fetch(LUNCH_API_URL).then(res => res.json());
+      data: { menu, imgPaths },
+    } = await fetch(LUNCH_API_URL).then((res) => res.json());
 
     const days = R.pipe(
-      R.find(x => x.type === "info"),
+      R.find((x) => x.type === "info"),
       R.prop("categories"),
       R.head,
       R.prop("entries"),
@@ -113,7 +110,7 @@ async function getMenu(ctx) {
 
     ctx.response.body = {
       weekNumber,
-      days
+      days,
     };
   } catch (error) {
     ctx.response.status = 500;
@@ -124,7 +121,7 @@ async function getMenu(ctx) {
 const parseNourishMenu = (menu, imgPath) => ({
   day: R.head(R.match(/MANDAG|TIRSDAG|ONSDAG|TORSDAG|FREDAG/i, menu.name)),
   dishes: R.pipe(R.split("{n}"), R.filter(isNotEmpty))(menu.desc),
-  image: `${imgPath}${menu.img}`
+  image: `${imgPath}${menu.img}`,
 });
 
 // GET Powerpoint Menu
@@ -151,8 +148,8 @@ async function updatePowerpointMenu(ctx, next) {
   if (R.complement(R.isNil(ctx.request.files))) {
     const menus = await Promise.all(
       Object.values(ctx.request.files).map(
-        file =>
-          new Promise(resolve => {
+        (file) =>
+          new Promise((resolve) => {
             const { name } = file;
 
             if (R.isEmpty(name)) {
@@ -186,7 +183,7 @@ async function updatePowerpointMenu(ctx, next) {
   }
 }
 
-const createMenuFromPptx = async filePath =>
+const createMenuFromPptx = async (filePath) =>
   new Promise((resolve, reject) =>
     textract.fromFileWithPath(
       filePath,
@@ -207,7 +204,7 @@ const dayWeights = {
   torsdag: 4,
   fredag: 5,
   lørdag: 6,
-  søndag: 7
+  søndag: 7,
 };
 const sortyByDay = R.sort((a, b) => {
   const left = dayWeights[R.toLower(a.day)];
@@ -217,13 +214,13 @@ const sortyByDay = R.sort((a, b) => {
 });
 const prepAndSort = ({ days, weekNumber }) => ({
   weekNumber,
-  days: sortyByDay(days)
+  days: sortyByDay(days),
 });
 
 const buildMenu = R.pipe(
   R.split("\n"),
   R.map(R.trim),
-  R.filter(x => R.not(R.isEmpty(x))),
+  R.filter((x) => R.not(R.isEmpty(x))),
   R.reduce(
     (acc, val) => {
       const isDay = R.test(/MANDAG|TIRSDAG|ONSDAG|TORSDAG|FREDAG/i, val);
@@ -235,7 +232,7 @@ const buildMenu = R.pipe(
         return {
           ...acc,
           _parsingDay: day,
-          days: [...acc.days, { day, dishes: [] }]
+          days: [...acc.days, { day, dishes: [] }],
         };
       }
 
@@ -248,12 +245,12 @@ const buildMenu = R.pipe(
         }
         return {
           ...acc,
-          days: R.map(x => {
+          days: R.map((x) => {
             if (x.day === acc._parsingDay) {
               return { ...x, dishes: [...x.dishes, dish] };
             }
             return x;
-          }, acc.days)
+          }, acc.days),
         };
       }
 
@@ -261,7 +258,7 @@ const buildMenu = R.pipe(
         const weekNumber = val;
         return {
           ...acc,
-          weekNumber: R.head(R.match(/[0-9]./, weekNumber))
+          weekNumber: R.head(R.match(/[0-9]./, weekNumber)),
         };
       }
       return acc;
