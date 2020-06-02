@@ -120,7 +120,11 @@ async function getMenu(ctx) {
 
 const parseNourishMenu = (menu, imgPath) => ({
   day: R.head(R.match(/MANDAG|TIRSDAG|ONSDAG|TORSDAG|FREDAG/i, menu.name)),
-  dishes: R.pipe(R.split("{n}"), R.filter(isNotEmpty))(menu.desc),
+  dishes: R.pipe(
+    R.defaultTo(""),
+    R.split("{n}"),
+    R.filter(isNotEmpty)
+  )(menu.desc),
   image: `${imgPath}${menu.img}`,
 });
 
