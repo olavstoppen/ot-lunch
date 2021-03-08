@@ -103,7 +103,7 @@ async function getMenu(ctx) {
     const days = R.pipe(
       R.find((x) => x.type === "info"),
       R.prop("categories"),
-      R.head,
+      R.find((x) => x.id === 108155), // Kanalpiren id
       R.prop("entries"),
       R.map(R.partialRight(parseNourishMenu, imgPaths))
     )(menu);
