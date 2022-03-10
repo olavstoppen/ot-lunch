@@ -1,4 +1,4 @@
-FROM node:14.2 as builder
+FROM node:16-alpine
 # RUN apt-get install -y git
 WORKDIR /app
 COPY package*.json ./
