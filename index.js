@@ -88,7 +88,6 @@ function stripWirdStufFromText(text) {
   const hola = matches.reduce((acc, match) => {
     return acc.trim().replace(match, '');
   }, text);
-  console.log(hola.trim());
   return hola.trim();
 }
 
