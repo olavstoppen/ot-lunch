@@ -1,5 +1,5 @@
 import path from 'path';
-import npmPackage from './package.json';
+import npmPackage from './package.json' assert { type: 'json' };
 
 const getAliases = () => {
   const base = process.cwd();
