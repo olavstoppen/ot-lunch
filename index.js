@@ -82,6 +82,16 @@ function norwegifyDays(day) {
   return day;
 }
 
+function stripWirdStufFromText(text) {
+  const matches = [/(64\sgrader)$/];
+
+  const hola = matches.reduce((acc, match) => {
+    return acc.trim().replace(match, '');
+  }, text);
+  console.log(hola.trim());
+  return hola.trim();
+}
+
 async function fetchMenuFromFireBase(weekNumber) {
   return new Promise((resolve, reject) => {
     const adminAppRef = ref(
@@ -109,8 +119,11 @@ async function fetchMenuFromFireBase(weekNumber) {
                 return {
                   day: norwegifyDays(text),
                   dishes:
-                    dishes?.map(({ header, subHeader }) =>
-                      `${stripNumberfromHeader(header)}: ${subHeader}`.trim(),
+                    dishes?.map(
+                      ({ header, subHeader }) =>
+                        `${stripNumberfromHeader(
+                          header,
+                        )}: ${stripWirdStufFromText(subHeader)}`,
                     ) ?? [],
                 };
               }),
